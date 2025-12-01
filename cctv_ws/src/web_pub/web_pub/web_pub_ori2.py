@@ -10,9 +10,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from std_msgs.msg import Bool
-# 🚀 [수정/추가] 이미지 메시지 발행을 위해 필요
-from sensor_msgs.msg import Image 
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+from sensor_msgs.msg import Image
 
 
 class YOLOWebcamPublisher(Node):
@@ -23,41 +21,20 @@ class YOLOWebcamPublisher(Node):
         self.max_object_count = 0
         self.classNames = model.names
         self.bridge = CvBridge()
-
-        # 🚀 [추가] 이미지 전송을 위한 QoS 프로파일 정의 (best_effort)
-        qos_profile_image = QoSProfile(
-            reliability=ReliabilityPolicy.BEST_EFFORT, # 유실되더라도 빨리 보냄 (FPS 중요)
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1 # 버퍼에 가장 최근 프레임 1개만 유지
-        )
-        
-        # 🚀 [수정] Bool 상태를 발행하는 기존 Publisher
-        self.bool_publisher = self.create_publisher(Bool, 'cctvcam/roi_status', 10) 
-        
-        # 🚀 [추가] 처리된 이미지를 발행하는 Publisher
-        # 🚀 [수정] 이미지 Publisher에 QoS 프로파일 적용
-        # self.image_publisher = self.create_publisher(Image, 'cctvcam/image_processed', 10)
-        self.image_publisher = self.create_publisher(
-            Image, 
-            'cctvcam/image_processed', 
-            qos_profile=qos_profile_image # QoS 적용
-        )
-        
+        self.publisher = self.create_publisher(Bool, 'cctvcam_msg', 10)
         self.should_shutdown = False
 
         self.bool = False
         self.in_roi_since = None  # ROI 안에 들어온 시간 기록용
 
         # --- 웹캠 열기 ---
-        self.cap = cv2.VideoCapture(4)
+        self.cap = cv2.VideoCapture(2)
         if not self.cap.isOpened():
             self.get_logger().error("Failed to open webcam.")
             raise RuntimeError("Webcam not available")
 
-        # 🚀 [추가] 카메라 FPS를 30으로 설정 요청 (카메라가 지원해야 함)
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
-        # 🚀 [수정] 타이머 주기를 30Hz에 맞게 0.033으로 설정 /기존 0.1
-        self.timer = self.create_timer(0.033, self.process_frame)
+        # 0.1초(10Hz)마다 프레임 처리
+        self.timer = self.create_timer(0.1, self.process_frame)
 
     def process_frame(self):
         if self.should_shutdown:
@@ -71,6 +48,7 @@ class YOLOWebcamPublisher(Node):
         h, w, _ = img.shape
 
         # --- 평행사변형 ROI 정의 ---
+        # 점 순서는 시계 또는 반시계 방향으로 주는 것이 좋음
         roi_points = np.array([
             [25, 125],   # P1
             [600, 100],  # P2
@@ -83,9 +61,8 @@ class YOLOWebcamPublisher(Node):
         cv2.putText(img, "MY ROI", (25, 120),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
 
-        # YOLO 추론 # process_frame 함수 내부 수정
-        # results = self.model(img, stream=True) # <--- 기존
-        results = self.model(img, stream=True, imgsz=320) # 🚀 [수정] 입력 해상도를 320x320으로 줄여서 추론 속도 향상
+        # YOLO 추론
+        results = self.model(img, stream=True)
         object_count = 0
         fontScale = 1
         yolo_boxes = []
@@ -108,6 +85,7 @@ class YOLOWebcamPublisher(Node):
             cy = int((y1 + y2) / 2)
 
             # --- 평행사변형 ROI 내부 여부 판단 ---
+            # pointPolygonTest: >0 inside, 0 on edge, <0 outside
             inside = cv2.pointPolygonTest(roi_points, (cx, cy), False)
             inside_roi = inside >= 0  # 경계 포함해서 ROI로 취급
 
@@ -139,31 +117,20 @@ class YOLOWebcamPublisher(Node):
 
         cv2.putText(img, f"{w}x{h}", (w - 200, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-        
-        # ----------------------------------------------------
-        # 🚀 [수정/추가] 이미지 토픽 발행
-        # ----------------------------------------------------
-        # 1. OpenCV 이미지를 ROS 이미지 메시지로 변환 (BGR 형식)
-        ros_image = self.bridge.cv2_to_imgmsg(img, encoding="bgr8")
-        
-        # 2. 이미지 Publisher로 발행
-        self.image_publisher.publish(ros_image)
-        
-        # 3. Bool 상태 Publisher로 발행
-        self.bool_publisher.publish(Bool(data=self.bool))
 
-        # 4. ❌ 로컬 화면 표시 기능 제거
-        # cv2.imshow("Webcam", img)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     self.get_logger().info("q pressed, stopping frame processing.")
-        #     self.should_shutdown = True
+        self.publisher.publish(Bool(data=self.bool))
+
+        cv2.imshow("Webcam", img)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.get_logger().info("q pressed, stopping frame processing.")
+            self.should_shutdown = True
 
     def destroy_node(self):
         # 리소스 정리
         if hasattr(self, "cap") and self.cap.isOpened():
             self.cap.release()
-        # ❌ 로컬 창 정리 코드 제거
-        # cv2.destroyAllWindows() 
+        cv2.destroyAllWindows()
         super().destroy_node()
 
 
