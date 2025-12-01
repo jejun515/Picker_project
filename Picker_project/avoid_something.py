@@ -1,266 +1,287 @@
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from geometry_msgs.msg import Twist
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, Image
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from turtlebot4_navigation.turtlebot4_navigator import TurtleBot4Directions, TurtleBot4Navigator
 from nav2_simple_commander.robot_navigator import TaskResult
 import time
-import math
+import threading
+import cv2 # OpenCV
+from cv_bridge import CvBridge, CvBridgeError # ROS->OpenCV 변환기
+from ultralytics import YOLO # YOLO 모델
 
 # =========================================
-# 1. 안전 가드 & 중재자 클래스 (Phase 1, 2 공용)
+# 1. 안전 가드 + YOLO 탐지기
 # =========================================
 class SafetyMonitor(Node):
     def __init__(self):
         super().__init__('safety_monitor')
-        qos = QoSProfile(depth=10)
         
-        # 센서 구독
-        self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, qos)
-        
-        # 팀원 명령 구독 (Phase 2용)
-        self.input_sub = self.create_subscription(Twist, '/cmd_vel_input', self.input_callback, qos)
-        
-        # 로봇 제어 (긴급 회피 및 중개용)
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', qos)
+        # QoS 설정
+        qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=10
+        )
 
-        # 설정값
-        self.emergency_dist = 0.40  # 이 거리보다 가까우면 비상 상황
+        # LiDAR 및 제어        
+        self.scan_sub = self.create_subscription(LaserScan, '/robot3/scan', self.scan_callback, qos)
+        self.input_sub = self.create_subscription(Twist, '/cmd_vel_input', self.input_callback, 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, '/robot3/cmd_vel', 10)
+
+        self.img_sub = self.create_subscription(Image, '/robot3/oakd/rgb/preview/image_raw', self.img_callback, qos)
+        
+        self.bridge = CvBridge()
+        self.latest_cv_image = None # 가장 최근 이미지 저장용
+        
+        print("📦 YOLO 모델을 불러오는 중...", flush=True)
+        # 팀원분이 준 모델 경로 (경로가 틀리면 에러나니 확인 필수!)
+        try:
+            self.model = YOLO("/home/rokey/rokey_ws/src/final_project/box_yolo8n.pt")
+            print("✅ YOLO 모델 로드 완료!", flush=True)
+        except Exception as e:
+            print(f"❌ YOLO 모델 로드 실패: {e}", flush=True)
+            self.model = None
+
+        # 상태 변수들
+        self.emergency_dist = 0.40 
+        self.current_dist = 10.0
         self.is_danger = False
-        self.phase2_active = False # Phase 2 시작 전엔 팀원 명령 무시
+        self.phase2_active = False 
+        self.obstacle_dir = 1.0
+        self.is_sensor_active = False
 
     def scan_callback(self, msg):
-        # 전방 50도(-25 ~ +25) 감시
+        self.is_sensor_active = True
         ranges = msg.ranges
-        # Turtlebot4의 LIDAR 데이터 배열 구조에 따라 슬라이싱
-        front_ranges = ranges[0:45] + ranges[-45:]
+        count = len(ranges)
+        if count == 0: return
+
+        # 전방 각도
+        fov_ratio = 45 / 360
+        split_idx = int(count * fov_ratio) 
+        half_idx = split_idx // 2
         
-        min_dist = float('inf')
-        for r in front_ranges:
-            if 0.1 < r < self.emergency_dist: # 노이즈(0.1) 제외
-                if r < min_dist: min_dist = r
+        left_slice = ranges[0 : half_idx]
+        right_slice = ranges[-half_idx : ]
         
+        # 노이즈 필터링 (0.12m ~ 1.0m)
+        valid_left = [r for r in left_slice if 0.12 < r < 1.0]
+        valid_right = [r for r in right_slice if 0.12 < r < 1.0]
+        
+        min_left = min(valid_left) if valid_left else 10.0
+        min_right = min(valid_right) if valid_right else 10.0
+        min_dist = min(min_left, min_right)
+
+        self.current_dist = min_dist
         self.is_danger = (min_dist < self.emergency_dist)
 
-    def input_callback(self, msg):
-        # Phase 2가 아니면 무시
-        if not self.phase2_active:
-            return
+        if min_right < min_left: self.obstacle_dir = 1.0 
+        else: self.obstacle_dir = -1.0
 
+    def img_callback(self, msg):
+        # 카메라 데이터를 받을 때마다 OpenCV 형식으로 변환해서 저장해둠
+        try:
+            # ROS Image -> OpenCV Image (BGR)
+            self.latest_cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        except CvBridgeError as e:
+            pass
+
+    def input_callback(self, msg):
+        if not self.phase2_active: return
         final_cmd = Twist()
-        
         if self.is_danger:
-            # [Phase 2] 장애물 감지 시: 팀원 명령 무시하고 제자리 회피
-            # (로그 너무 많이 뜨지 않게 throttle 조절 필요할 수 있음)
-            # print("🚨 [Phase 2] 장애물 감지! 회피 기동 중...")
             final_cmd.linear.x = 0.0
-            final_cmd.angular.z = 0.5 # 왼쪽으로 회전
+            final_cmd.angular.z = 0.5 * self.obstacle_dir
         else:
-            # [Phase 2] 안전함: 팀원 명령 통과
             final_cmd = msg
-            
         self.cmd_vel_pub.publish(final_cmd)
 
-    def execute_manual_evasion(self):
-        # [Phase 1] Nav2 주행 중 긴급 회피 동작
-        print("⚡ [Phase 1] 긴급 회피 발동! (Nav2 잠시 비켜!)")
-        twist = Twist()
+    # [추가] 물체 개수 세기 함수
+    def detect_and_count(self):
+        if self.model is None:
+            print("⚠️ 모델이 없어서 탐지 불가.")
+            return -1
         
-        # 정지 -> 후진 -> 회전
-        twist.linear.x = 0.0; self.cmd_vel_pub.publish(twist); time.sleep(0.2)
-        twist.linear.x = -0.15; self.cmd_vel_pub.publish(twist); time.sleep(0.5)
-        twist.linear.x = 0.0; twist.angular.z = 0.8; self.cmd_vel_pub.publish(twist); time.sleep(1.0)
+        if self.latest_cv_image is None:
+            print("⚠️ 카메라 이미지가 아직 안 들어옴.")
+            return -1
+
+        print("📸 이미지 분석 중...", flush=True)
+        # YOLO 추론 (verbose=False는 로그 끄기)
+        results = self.model(self.latest_cv_image, verbose=False)[0]
         
-        # 정지
-        twist.angular.z = 0.0; self.cmd_vel_pub.publish(twist)
+        # 박스 개수 세기
+        box_count = len(results.boxes)
+        
+        # (선택 사항) 결과 이미지를 화면에 띄우고 싶다면 아래 주석 해제
+        # res_plotted = results.plot()
+        # cv2.imshow("YOLO Result", res_plotted)
+        # cv2.waitKey(2000) # 2초간 보여줌
+        # cv2.destroyAllWindows()
+        
+        return box_count
 
 # =========================================
-# 2. Nav2 설정 변경 클래스
-# =========================================
-class Nav2Configurator(Node):
-    def __init__(self):
-        super().__init__('nav2_configurator')
-        self.cli = self.create_client(SetParameters, '/robot3/controller_server/set_parameters')
-
-    def set_params(self, max_speed, xy_tol, yaw_tol):
-        if not self.cli.wait_for_service(timeout_sec=1.0):
-            print("⚠️ Controller Server 연결 실패. 기본 설정으로 주행합니다.")
-            return
-
-        req = SetParameters.Request()
-        # DWB Controller 파라미터 이름 (로봇 설정에 따라 다를 수 있음)
-        req.parameters = [
-            Parameter(name='FollowPath.max_vel_x', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=max_speed)),
-            Parameter(name='FollowPath.xy_goal_tolerance', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=xy_tol)),
-            Parameter(name='FollowPath.yaw_goal_tolerance', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=yaw_tol))
-        ]
-        self.cli.call_async(req)
-        print(f"🔧 Nav2 설정 변경: 속도={max_speed}, 거리오차={xy_tol}, 각도오차={yaw_tol}")
-        time.sleep(0.5) # 적용 대기
-
-# =========================================
-# 3. 메인 실행 로직
+# 2. 메인 실행 로직
 # =========================================
 def main():
     rclpy.init()
     
-    # 노드 생성
     safety_node = SafetyMonitor()
-    config_node = Nav2Configurator()
     navigator = TurtleBot4Navigator()
 
+    # 백그라운드 실행 (센서 & 카메라 수신)
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(safety_node)
+    spin_thread = threading.Thread(target=executor.spin, daemon=True)
+    spin_thread.start()
+    
     # --- 초기화 ---
-    if not navigator.getDockedStatus():
-        navigator.info('Checking Dock Status...')
-        navigator.dock()
-
+    if not navigator.getDockedStatus(): navigator.dock()
     initial_pose = navigator.getPoseStamped([0.0, 0.0], TurtleBot4Directions.NORTH)
     navigator.setInitialPose(initial_pose)
     navigator.waitUntilNav2Active()
     navigator.undock()
 
+    print("⏳ 센서 연결 확인 중...", flush=True)
+    while not safety_node.is_sensor_active:
+        time.sleep(0.1)
+    print("✅ 센서 정상 연결됨.", flush=True)
+
+    config_cli = safety_node.create_client(SetParameters, '/robot3/controller_server/set_parameters')
+    def set_nav2_params(max_speed, xy_tol, yaw_tol):
+        if not config_cli.wait_for_service(timeout_sec=1.0): return
+        req = SetParameters.Request()
+        req.parameters = [
+            Parameter(name='FollowPath.max_vel_x', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=max_speed)),
+            Parameter(name='FollowPath.xy_goal_tolerance', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=xy_tol)),
+            Parameter(name='FollowPath.yaw_goal_tolerance', value=ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=yaw_tol))
+        ]
+        config_cli.call_async(req)
+        time.sleep(0.5)
+
     # ---------------------------------------------------------
-    # 함수: Nav2 이동 + 장애물 감시 + 강제 성공 처리
+    # [핵심 수정] goToPose를 사용하여 쓰레드 없이 비동기 이동
     # ---------------------------------------------------------
-    def drive_smart(target_pose, arrival_radius):
-        print(f"🚗 이동 시작! (목표 반경 {arrival_radius}m 진입 시 성공 처리)")
-        navigator.startToPose(target_pose)
+    def drive_smart(target_pose, arrival_radius, strict_mode=False):
+        mode_str = "정밀" if strict_mode else "고속"
+        print(f"🚗 [{mode_str}] 이동 시작!", flush=True)
         
+        # [변경점] startToPose(Blocking) 대신 goToPose(Non-blocking) 사용!
+        # 쓰레드를 만들 필요가 없어졌습니다.
+        navigator.goToPose(target_pose)
+
         last_known_dist = float('inf')
 
         while not navigator.isTaskComplete():
-            # 1. 거리 체크 및 강제 성공 판정
+            
+            # (A) 위험 감지
+            if safety_node.is_danger:
+                print(f"🚨 [장애물] {safety_node.current_dist:.2f}m 감지 -> 회피!", flush=True)
+                navigator.cancelTask() # Nav2 중단
+                
+                # 정지 및 후진
+                stop_twist = Twist(); stop_twist.linear.x = -0.15
+                safety_node.cmd_vel_pub.publish(stop_twist); time.sleep(0.5)
+                
+                print("🔄 회피 회전 중...", flush=True)
+                while safety_node.is_danger:
+                    twist = Twist(); twist.linear.x = 0.0
+                    twist.angular.z = 0.6 * safety_node.obstacle_dir 
+                    safety_node.cmd_vel_pub.publish(twist)
+                    time.sleep(0.1)
+                
+                print("✅ 안전 확보. 재출발.", flush=True)
+                safety_node.cmd_vel_pub.publish(Twist()); time.sleep(0.5)
+                return "RETRY"
+
+            # (B) 도착 체크
             feedback = navigator.getFeedback()
             if feedback:
                 dist = feedback.distance_remaining
                 last_known_dist = dist
-                
-                if dist < arrival_radius:
-                    print(f"🚩 [이동 중] 목표 반경 진입 ({dist:.2f}m). 정지합니다.")
-                    navigator.cancelTask()
-                    safety_node.cmd_vel_pub.publish(Twist()) # 정지
+                if not strict_mode and dist < arrival_radius:
+                    print(f"🚩 [도착] 반경 진입 ({dist:.2f}m).", flush=True)
+                    navigator.cancelTask(); safety_node.cmd_vel_pub.publish(Twist())
                     return "SUCCESS"
+            
+            time.sleep(0.05)
 
-            # 2. 장애물 감시
-            rclpy.spin_once(safety_node, timeout_sec=0.05)
-            if safety_node.is_danger:
-                print("🚨 장애물 감지! Nav2 중단 및 회피!")
-                navigator.cancelTask()
-                safety_node.execute_manual_evasion()
-                return "RETRY"
-
-        # --- Nav2 종료 후 결과 확인 (여기가 수정됨) ---
+        # 결과 확인
         result = navigator.getResult()
-        print(f"🧐 Nav2 결과 코드(원본): {result}") 
+        if result == TaskResult.SUCCEEDED: return "SUCCESS"
+        elif result == TaskResult.CANCELED: return "RETRY"
+        
+        limit = arrival_radius + 0.05 if strict_mode else arrival_radius + 0.3
+        return "SUCCESS" if last_known_dist < limit else "FAIL"
 
-        # TaskResult 객체와 직접 비교해야 정확합니다.
-        if result == TaskResult.SUCCEEDED:
-            return "SUCCESS"
-        elif result == TaskResult.CANCELED:
-            return "RETRY"
-        elif result == TaskResult.FAILED:
-            # 실패했지만 거리가 가까우면 성공 처리
-            if last_known_dist < arrival_radius + 0.3:
-                print(f"⚠️ Nav2는 실패(FAILED)라지만, 목표 근처({last_known_dist:.2f}m)입니다. [성공 처리]")
-                return "SUCCESS"
-            else:
-                return "FAIL"
-        else:
-            return "FAIL"
+    def nudge_robot(distance_m, speed_mps=0.05):
+        print(f"📏 [마무리] {distance_m}m 전진...", flush=True)
+        duration = distance_m / speed_mps
+        twist = Twist(); twist.linear.x = speed_mps
+        start_time = time.time()
+        while (time.time() - start_time) < duration:
+            safety_node.cmd_vel_pub.publish(twist); time.sleep(0.1)
+        safety_node.cmd_vel_pub.publish(Twist())
 
     # =========================================================
-    # Phase 1-1: 중간 지점 이동
+    # Phase 1
     # =========================================================
-    # 좌표는 질문주신 로그에 맞춰 수정했습니다 (-4.5, 0.4)
-    goal_1 = navigator.getPoseStamped([-4.5, 0.4], TurtleBot4Directions.SOUTH)
-    
-    # 속도 0.31, xy오차 1.0 (넓게), 각도오차 3.14 (무시)
-    config_node.set_params(max_speed=0.31, xy_tol=1.0, yaw_tol=3.14)
+    goal_1 = navigator.getPoseStamped([-5.9, 0.4], TurtleBot4Directions.SOUTH)
+    set_nav2_params(0.31, 0.5, 3.14)
     
     while True:
-        status = drive_smart(goal_1, arrival_radius=1.0)
-        
-        # 디버깅: 함수가 뭘 리턴했는지 눈으로 확인
-        print(f"👉 drive_smart 리턴값: {status}") 
-
-        if status == "SUCCESS": # <--- 문자열 비교
-            print("✅ 1차 목표 통과.")
-            break
-        elif status == "RETRY":
-            print("🔄 경로 재설정 중...")
-            continue
-        else:
-            print("❌ 1차 이동 실패. 프로그램을 종료합니다.")
-            rclpy.shutdown()
-            return
+        status = drive_smart(goal_1, arrival_radius=1.0, strict_mode=False)
+        if status == "SUCCESS": print("✅ 1차 완료.", flush=True); break
+        elif status == "RETRY": continue
+        else: print("❌ 1차 실패.", flush=True); rclpy.shutdown(); return
 
     # =========================================================
-    # Phase 1-1: 중간 지점 이동 (빠르게, 대충)
+    # Phase 2
     # =========================================================
-    goal_1 = navigator.getPoseStamped([-4.5, 0.4], TurtleBot4Directions.SOUTH)
+    goal_2 = navigator.getPoseStamped([-6.38, 1.8], TurtleBot4Directions.SOUTH)
+    set_nav2_params(0.1, 0.05, 0.1)
     
-    # 속도 0.31(최대), 도착 반경 1.0m로 설정 (제자리 회전 방지용으로 Yaw 오차 크게)
-    config_node.set_params(max_speed=0.31, xy_tol=1.0, yaw_tol=3.14)
-    
+    print("🐢 정밀 모드...", flush=True)
     while True:
-        # 반경 1.0m 안에만 들면 성공으로 침
-        status = drive_smart(goal_1, arrival_radius=1.0)
-        
-        if status == "SUCCESS":
-            print("✅ 1차 목표 통과.")
+        status = drive_smart(goal_2, arrival_radius=0.05, strict_mode=True)
+        if status == "SUCCESS": 
+            print("🎉 최종 완료!", flush=True)
+            nudge_robot(0.05)
             break
-        elif status == "RETRY":
-            print("🔄 경로 재설정 중...")
-            continue
-        else:
-            print("❌ 1차 이동 실패. 프로그램을 종료합니다.")
-            rclpy.shutdown()
-            return
+        elif status == "RETRY": continue
+        else: print("❌ 최종 실패.", flush=True); rclpy.shutdown(); return
 
     # =========================================================
-    # Phase 1-2: 최종 지점 이동 (느리게, 정확하게)
+    # [NEW] Phase 3: YOLO 탐지 및 개수 세기
     # =========================================================
-    goal_2 = navigator.getPoseStamped([-6.4, 0.28], TurtleBot4Directions.SOUTH)
+    print("\n=== [Phase 3] 물체 감지 시작 ===", flush=True)
     
-    # 속도 0.15(저속), 도착 반경 0.1m(정밀)
-    config_node.set_params(max_speed=0.15, xy_tol=0.1, yaw_tol=3.14)
+    # 이미지가 들어올 때까지 잠깐 대기 (카메라 안정화)
+    time.sleep(2.0)
     
-    while True:
-        # 반경 0.3m 안에 들면 성공으로 침 (너무 좁게 잡으면 못 멈춤)
-        status = drive_smart(goal_2, arrival_radius=0.1)
-        
-        if status == "SUCCESS":
-            print("🎉 최종 목표 도착 완료!")
-            break
-        elif status == "RETRY":
-            continue
-        else:
-            print("❌ 최종 이동 실패.")
-            rclpy.shutdown()
-            return
+    # 여기서 탐지 함수 호출!
+    box_count = safety_node.detect_and_count()
+    
+    print(f"\n📦📦📦 [결과] 감지된 박스 개수: {box_count} 개 📦📦📦\n", flush=True)
+
 
     # =========================================================
-    # Phase 2: 물체 추적 모드 (팀원 코드 연동)
+    # Phase 4: 추적 모드 (기존 Phase 2)
     # =========================================================
-    print("\n=== [Phase 2] 추적 모드 전환 ===")
-    print("👉 팀원에게 알리세요: '/cmd_vel_input' 토픽으로 명령을 보내주세요.")
+    print("\n=== [Phase 4] 추적 모드 전환 ===", flush=True)
+    print("👉 '/cmd_vel_input' 대기 중...", flush=True)
     
-    safety_node.phase2_active = True # 이제부터 SafetyMonitor가 중재 시작
-    
+    safety_node.phase2_active = True
     try:
-        # SafetyMonitor가 계속 돌면서 중재 역할 수행
-        while rclpy.ok():
-            rclpy.spin_once(safety_node)
-    except KeyboardInterrupt:
-        pass
+        while rclpy.ok(): time.sleep(1)
+    except KeyboardInterrupt: pass
     finally:
-        print("프로그램 종료.")
-        safety_node.destroy_node()
-        config_node.destroy_node()
-        rclpy.shutdown()
+        safety_node.destroy_node(); rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
