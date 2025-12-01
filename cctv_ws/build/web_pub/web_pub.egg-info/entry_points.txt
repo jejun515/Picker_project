@@ -1,0 +1,4 @@
+[console_scripts]
+web_pub = web_pub.web_pub:main
+web_sub = web_pub.web_sub:main
+

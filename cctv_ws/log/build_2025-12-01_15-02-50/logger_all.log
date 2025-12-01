@@ -1,0 +1,183 @@
+[0.077s] DEBUG:colcon:Command line arguments: ['/usr/bin/colcon', 'build']
+[0.077s] DEBUG:colcon:Parsed command line arguments: Namespace(log_base=None, log_level=None, verb_name='build', build_base='build', install_base='install', merge_install=False, symlink_install=False, test_result_base=None, continue_on_error=False, executor='parallel', parallel_workers=8, event_handlers=None, ignore_user_meta=False, metas=['./colcon.meta'], base_paths=['.'], packages_ignore=None, packages_ignore_regex=None, paths=None, packages_up_to=None, packages_up_to_regex=None, packages_above=None, packages_above_and_dependencies=None, packages_above_depth=None, packages_select_by_dep=None, packages_skip_by_dep=None, packages_skip_up_to=None, packages_select_build_failed=False, packages_skip_build_finished=False, packages_select_test_failures=False, packages_skip_test_passed=False, packages_select=None, packages_skip=None, packages_select_regex=None, packages_skip_regex=None, packages_start=None, packages_end=None, allow_overriding=[], cmake_args=None, cmake_target=None, cmake_target_skip_unavailable=False, cmake_clean_cache=False, cmake_clean_first=False, cmake_force_configure=False, ament_cmake_args=None, catkin_cmake_args=None, catkin_skip_building_tests=False, verb_parser=<colcon_defaults.argument_parser.defaults.DefaultArgumentsDecorator object at 0x7e04625aa080>, verb_extension=<colcon_core.verb.build.BuildVerb object at 0x7e04627a8f10>, main=<bound method BuildVerb.main of <colcon_core.verb.build.BuildVerb object at 0x7e04627a8f10>>)
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) check parameters
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) check parameters
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) check parameters
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) check parameters
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(colcon_meta) discover
+[0.203s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) discover
+[0.203s] INFO:colcon.colcon_core.package_discovery:Crawling recursively for packages in '/home/jejun/cctv_ws'
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ignore', 'ignore_ament_install']
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore'
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ignore_ament_install'
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_pkg']
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_pkg'
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['colcon_meta']
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'colcon_meta'
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['ros']
+[0.203s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'ros'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['cmake', 'python']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'cmake'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extensions ['python_setup_py']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(.) by extension 'python_setup_py'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extensions ['ignore', 'ignore_ament_install']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(build) by extension 'ignore'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(build) ignored
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extensions ['ignore', 'ignore_ament_install']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(install) by extension 'ignore'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(install) ignored
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extensions ['ignore', 'ignore_ament_install']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(log) by extension 'ignore'
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(log) ignored
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['ignore', 'ignore_ament_install']
+[0.210s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'ignore'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'ignore_ament_install'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['colcon_pkg']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'colcon_pkg'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['colcon_meta']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'colcon_meta'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['ros']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'ros'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['cmake', 'python']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'cmake'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'python'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extensions ['python_setup_py']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model) by extension 'python_setup_py'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['ignore', 'ignore_ament_install']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'ignore'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'ignore_ament_install'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['colcon_pkg']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'colcon_pkg'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['colcon_meta']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'colcon_meta'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['ros']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'ros'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['cmake', 'python']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'cmake'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'python'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extensions ['python_setup_py']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11) by extension 'python_setup_py'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['ignore', 'ignore_ament_install']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'ignore'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'ignore_ament_install'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['colcon_pkg']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'colcon_pkg'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['colcon_meta']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'colcon_meta'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['ros']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'ros'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['cmake', 'python']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'cmake'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'python'
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extensions ['python_setup_py']
+[0.211s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo11s) by extension 'python_setup_py'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['ignore', 'ignore_ament_install']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'ignore'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'ignore_ament_install'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['colcon_pkg']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'colcon_pkg'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['colcon_meta']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'colcon_meta'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['ros']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'ros'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['cmake', 'python']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'cmake'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'python'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extensions ['python_setup_py']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(model/training_yolo8) by extension 'python_setup_py'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ignore', 'ignore_ament_install']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ignore_ament_install'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_pkg']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_pkg'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['colcon_meta']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'colcon_meta'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['ros']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'ros'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['cmake', 'python']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'cmake'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extensions ['python_setup_py']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src) by extension 'python_setup_py'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extensions ['ignore', 'ignore_ament_install']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extension 'ignore'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extension 'ignore_ament_install'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extensions ['colcon_pkg']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extension 'colcon_pkg'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extensions ['colcon_meta']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extension 'colcon_meta'
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extensions ['ros']
+[0.212s] Level 1:colcon.colcon_core.package_identification:_identify(src/web_pub) by extension 'ros'
+[0.214s] DEBUG:colcon.colcon_core.package_identification:Package 'src/web_pub' with type 'ros.ament_python' and name 'web_pub'
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(recursive) using defaults
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) discover
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(ignore) using defaults
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) discover
+[0.214s] Level 1:colcon.colcon_core.package_discovery:discover_packages(path) using defaults
+[0.226s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) check parameters
+[0.226s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) discover
+[0.227s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 1 installed packages in /home/jejun/cctv_ws/install
+[0.228s] DEBUG:colcon.colcon_installed_package_information.package_discovery:Found 472 installed packages in /opt/ros/humble
+[0.229s] Level 1:colcon.colcon_core.package_discovery:discover_packages(prefix_path) using defaults
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_args' from command line to 'None'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_target' from command line to 'None'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_target_skip_unavailable' from command line to 'False'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_clean_cache' from command line to 'False'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_clean_first' from command line to 'False'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'cmake_force_configure' from command line to 'False'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'ament_cmake_args' from command line to 'None'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'catkin_cmake_args' from command line to 'None'
+[0.260s] Level 5:colcon.colcon_core.verb:set package 'web_pub' build argument 'catkin_skip_building_tests' from command line to 'False'
+[0.261s] DEBUG:colcon.colcon_core.verb:Building package 'web_pub' with the following arguments: {'ament_cmake_args': None, 'build_base': '/home/jejun/cctv_ws/build/web_pub', 'catkin_cmake_args': None, 'catkin_skip_building_tests': False, 'cmake_args': None, 'cmake_clean_cache': False, 'cmake_clean_first': False, 'cmake_force_configure': False, 'cmake_target': None, 'cmake_target_skip_unavailable': False, 'install_base': '/home/jejun/cctv_ws/install/web_pub', 'merge_install': False, 'path': '/home/jejun/cctv_ws/src/web_pub', 'symlink_install': False, 'test_result_base': None}
+[0.261s] INFO:colcon.colcon_core.executor:Executing jobs using 'parallel' executor
+[0.261s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete
+[0.262s] INFO:colcon.colcon_ros.task.ament_python.build:Building ROS package in '/home/jejun/cctv_ws/src/web_pub' with build type 'ament_python'
+[0.262s] Level 1:colcon.colcon_core.shell:create_environment_hook('web_pub', 'ament_prefix_path')
+[0.263s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_core.shell.bat': Not used on non-Windows systems
+[0.263s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/ament_prefix_path.ps1'
+[0.263s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/ament_prefix_path.dsv'
+[0.263s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/ament_prefix_path.sh'
+[0.264s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.264s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.444s] INFO:colcon.colcon_core.task.python.build:Building Python package in '/home/jejun/cctv_ws/src/web_pub'
+[0.444s] INFO:colcon.colcon_core.shell:Skip shell extension 'powershell' for command environment: Not usable outside of PowerShell
+[0.444s] DEBUG:colcon.colcon_core.shell:Skip shell extension 'dsv' for command environment
+[0.680s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoking command in '/home/jejun/cctv_ws/src/web_pub': PYTHONPATH=/home/jejun/cctv_ws/build/web_pub/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/web_pub build --build-base /home/jejun/cctv_ws/build/web_pub/build install --record /home/jejun/cctv_ws/build/web_pub/install.log --single-version-externally-managed install_data
+[0.878s] DEBUG:colcon.colcon_core.event_handler.log_command:Invoked command in '/home/jejun/cctv_ws/src/web_pub' returned '0': PYTHONPATH=/home/jejun/cctv_ws/build/web_pub/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/web_pub build --build-base /home/jejun/cctv_ws/build/web_pub/build install --record /home/jejun/cctv_ws/build/web_pub/install.log --single-version-externally-managed install_data
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub' for CMake module files
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub' for CMake config files
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub/lib'
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub/bin'
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub/lib/pkgconfig/web_pub.pc'
+[0.880s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages'
+[0.880s] Level 1:colcon.colcon_core.shell:create_environment_hook('web_pub', 'pythonpath')
+[0.881s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/pythonpath.ps1'
+[0.881s] INFO:colcon.colcon_core.shell:Creating environment descriptor '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/pythonpath.dsv'
+[0.881s] INFO:colcon.colcon_core.shell:Creating environment hook '/home/jejun/cctv_ws/install/web_pub/share/web_pub/hook/pythonpath.sh'
+[0.882s] Level 1:colcon.colcon_core.environment:checking '/home/jejun/cctv_ws/install/web_pub/bin'
+[0.882s] Level 1:colcon.colcon_core.environment:create_environment_scripts_only(web_pub)
+[0.882s] INFO:colcon.colcon_core.shell:Creating package script '/home/jejun/cctv_ws/install/web_pub/share/web_pub/package.ps1'
+[0.882s] INFO:colcon.colcon_core.shell:Creating package descriptor '/home/jejun/cctv_ws/install/web_pub/share/web_pub/package.dsv'
+[0.883s] INFO:colcon.colcon_core.shell:Creating package script '/home/jejun/cctv_ws/install/web_pub/share/web_pub/package.sh'
+[0.883s] INFO:colcon.colcon_core.shell:Creating package script '/home/jejun/cctv_ws/install/web_pub/share/web_pub/package.bash'
+[0.883s] INFO:colcon.colcon_core.shell:Creating package script '/home/jejun/cctv_ws/install/web_pub/share/web_pub/package.zsh'
+[0.884s] Level 1:colcon.colcon_core.environment:create_file_with_runtime_dependencies(/home/jejun/cctv_ws/install/web_pub/share/colcon-core/packages/web_pub)
+[0.884s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:closing loop
+[0.884s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:loop closed
+[0.884s] DEBUG:colcon.colcon_parallel_executor.executor.parallel:run_until_complete finished with '0'
+[0.884s] DEBUG:colcon.colcon_core.event_reactor:joining thread
+[0.887s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.terminal_notifier': Not used on non-Darwin systems
+[0.887s] INFO:colcon.colcon_core.plugin_system:Skipping extension 'colcon_notification.desktop_notification.win32': Not used on non-Windows systems
+[0.887s] INFO:colcon.colcon_notification.desktop_notification:Sending desktop notification using 'notify2'
+[0.895s] DEBUG:colcon.colcon_core.event_reactor:joined thread
+[0.895s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/jejun/cctv_ws/install/local_setup.ps1'
+[0.896s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/jejun/cctv_ws/install/_local_setup_util_ps1.py'
+[0.897s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/jejun/cctv_ws/install/setup.ps1'
+[0.897s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/jejun/cctv_ws/install/local_setup.sh'
+[0.898s] INFO:colcon.colcon_core.shell:Creating prefix util module '/home/jejun/cctv_ws/install/_local_setup_util_sh.py'
+[0.898s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/jejun/cctv_ws/install/setup.sh'
+[0.898s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/jejun/cctv_ws/install/local_setup.bash'
+[0.899s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/jejun/cctv_ws/install/setup.bash'
+[0.899s] INFO:colcon.colcon_core.shell:Creating prefix script '/home/jejun/cctv_ws/install/local_setup.zsh'
+[0.900s] INFO:colcon.colcon_core.shell:Creating prefix chain script '/home/jejun/cctv_ws/install/setup.zsh'

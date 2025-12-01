@@ -1,0 +1,42 @@
+[0.455s] Invoking command in '/home/jejun/cctv_ws/src/web_pub': PYTHONPATH=/home/jejun/cctv_ws/build/web_pub/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/web_pub build --build-base /home/jejun/cctv_ws/build/web_pub/build install --record /home/jejun/cctv_ws/build/web_pub/install.log --single-version-externally-managed install_data
+[0.615s] running egg_info
+[0.615s] creating ../../build/web_pub/web_pub.egg-info
+[0.615s] writing ../../build/web_pub/web_pub.egg-info/PKG-INFO
+[0.616s] writing dependency_links to ../../build/web_pub/web_pub.egg-info/dependency_links.txt
+[0.616s] writing entry points to ../../build/web_pub/web_pub.egg-info/entry_points.txt
+[0.616s] writing requirements to ../../build/web_pub/web_pub.egg-info/requires.txt
+[0.616s] writing top-level names to ../../build/web_pub/web_pub.egg-info/top_level.txt
+[0.616s] writing manifest file '../../build/web_pub/web_pub.egg-info/SOURCES.txt'
+[0.617s] reading manifest file '../../build/web_pub/web_pub.egg-info/SOURCES.txt'
+[0.617s] adding license file 'LICENSE'
+[0.617s] writing manifest file '../../build/web_pub/web_pub.egg-info/SOURCES.txt'
+[0.617s] running build
+[0.617s] running build_py
+[0.617s] creating /home/jejun/cctv_ws/build/web_pub/build
+[0.617s] creating /home/jejun/cctv_ws/build/web_pub/build/lib
+[0.617s] creating /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub
+[0.618s] copying web_pub/web_sub.py -> /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub
+[0.618s] copying web_pub/web_pub.py -> /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub
+[0.618s] copying web_pub/__init__.py -> /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub
+[0.618s] running install
+[0.618s] running install_lib
+[0.618s] creating /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub
+[0.618s] copying /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub/web_sub.py -> /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub
+[0.618s] copying /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub/web_pub.py -> /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub
+[0.618s] copying /home/jejun/cctv_ws/build/web_pub/build/lib/web_pub/__init__.py -> /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub
+[0.619s] byte-compiling /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub/web_sub.py to web_sub.cpython-310.pyc
+[0.619s] byte-compiling /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub/web_pub.py to web_pub.cpython-310.pyc
+[0.620s] byte-compiling /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub/__init__.py to __init__.cpython-310.pyc
+[0.620s] running install_data
+[0.620s] creating /home/jejun/cctv_ws/install/web_pub/share/ament_index
+[0.620s] creating /home/jejun/cctv_ws/install/web_pub/share/ament_index/resource_index
+[0.620s] creating /home/jejun/cctv_ws/install/web_pub/share/ament_index/resource_index/packages
+[0.620s] copying resource/web_pub -> /home/jejun/cctv_ws/install/web_pub/share/ament_index/resource_index/packages
+[0.620s] copying package.xml -> /home/jejun/cctv_ws/install/web_pub/share/web_pub
+[0.620s] running install_egg_info
+[0.621s] Copying ../../build/web_pub/web_pub.egg-info to /home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages/web_pub-0.0.0-py3.10.egg-info
+[0.622s] running install_scripts
+[0.634s] Installing web_pub script to /home/jejun/cctv_ws/install/web_pub/lib/web_pub
+[0.634s] Installing web_sub script to /home/jejun/cctv_ws/install/web_pub/lib/web_pub
+[0.634s] writing list of installed files to '/home/jejun/cctv_ws/build/web_pub/install.log'
+[0.649s] Invoked command in '/home/jejun/cctv_ws/src/web_pub' returned '0': PYTHONPATH=/home/jejun/cctv_ws/build/web_pub/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jejun/cctv_ws/install/web_pub/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/web_pub build --build-base /home/jejun/cctv_ws/build/web_pub/build install --record /home/jejun/cctv_ws/build/web_pub/install.log --single-version-externally-managed install_data
