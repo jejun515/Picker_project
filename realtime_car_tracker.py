@@ -5,31 +5,26 @@ import numpy as np
 
 
 class RealTimeCarTracker:
-    def __init__(self, model_path='yolov8n.pt', source=0):
-        """
-        추적기 초기화
-        :param model_path: 사용할 YOLO 모델 파일 경로 (예: 'yolov8n.pt')
-        :param source: 비디오 소스 (0: 웹캠, 'path/to/video.mp4': 파일 경로)
-        """
+    def __init__(self):
+        model_path = "./balloons_3cls_params.pt"
+        cam_source = 2  # usb 웹캠
+
         self.model = YOLO(model_path)
-        self.target_class_index = 2 # 자동차 클래스 index
         
-        self.cap = cv2.VideoCapture(source)
+        self.cap = cv2.VideoCapture(cam_source)
         if not self.cap.isOpened():
-            raise IOError(f"웹캠 소스 {source}를 열 수 없습니다.")
+            raise IOError(f"웹캠 소스 {cam_source}를 열 수 없습니다.")
 
         print(f"✅ YOLOv8 모델 로드 완료: {model_path}")
-        print(f"✅ 'car' 클래스 (ID: {self.target_class_index}) 추적을 시작합니다.")
+        print(f"✅ Car 클래스 추적을 시작합니다.")
 
     def run_tracking(self):
         """웹캠에서 실시간으로 객체 추적을 실행합니다."""
-        
-        # 추적에 사용할 파라미터 설정
-        # tracker='bytetrack.yaml'은 Ultralytics가 권장하는 기본 추적 알고리즘 중 하나입니다.
+
         tracking_config = 'bytetrack.yaml'
         
         # FPS 계산용 변수
-        prev_time = time.time()
+        # prev_time = time.time()
         
         while self.cap.isOpened():
             success, frame = self.cap.read()
@@ -40,15 +35,11 @@ class RealTimeCarTracker:
             # ----------------------------------------------------
             # 1. YOLO 모델 추적 실행
             # ----------------------------------------------------
-            
-            # model.track()을 사용하여 추적 및 감지 수행
-            # persist=True: 추적 상태를 프레임 간에 유지
-            # classes=[self.target_class_index]: 'car' 클래스만 필터링하여 감지/추적
             results = self.model.track(
                 frame, 
                 persist=True, 
                 tracker=tracking_config,
-                classes=[self.target_class_index], 
+                classes=[0],    # car 클래스
                 verbose=False
             )
 
@@ -91,19 +82,19 @@ class RealTimeCarTracker:
             # ----------------------------------------------------
             
             # FPS 계산
-            current_time = time.time()
-            fps = 1 / (current_time - prev_time)
-            prev_time = current_time
+            # current_time = time.time()
+            # fps = 1 / (current_time - prev_time)
+            # prev_time = current_time
             
-            cv2.putText(
-                current_frame, 
-                f"FPS: {fps:.2f}", 
-                (10, 30), 
-                cv2.FONT_HERSHEY_SIMPLEX, 
-                1, 
-                (255, 0, 0), 
-                2
-            )
+            # cv2.putText(
+            #     current_frame, 
+            #     f"FPS: {fps:.2f}", 
+            #     (10, 30), 
+            #     cv2.FONT_HERSHEY_SIMPLEX, 
+            #     1, 
+            #     (255, 0, 0), 
+            #     2
+            # )
             
             cv2.imshow("YOLOv8 Real-Time Car Tracking", current_frame)
 

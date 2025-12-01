@@ -1,0 +1,14 @@
+# Ignore data collection files
+read_cam.py
+capture_wc_image.py
+create_data_dirs.py
+move_image.py
+move_label.py
+
+# Ignore all data files
+my_data
+tracker_data
+tracker
+
+# Ignore all checkpoint files
+*.pt
