@@ -1,8 +1,10 @@
 import cv2
 from ultralytics import YOLO
 
+DETECT_TARGET = [0, 1]
+
 def main():
-    model = YOLO('./balloons_2car_params.pt') 
+    model = YOLO('./mixed_results.pt') 
 
     cap = cv2.VideoCapture(2)
 
@@ -26,7 +28,7 @@ def main():
             break
 
         # 4. YOLO 객체 탐지 수행
-        results = model.predict(frame, classes=[0], conf=0.5, verbose=False)
+        results = model.predict(frame, classes=DETECT_TARGET, conf=0.5, verbose=False)
 
         annotated_frame = frame.copy()
 
