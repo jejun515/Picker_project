@@ -8,4 +8,7 @@ move_label.py
 # Ignore all data files
 my_data
 tracker_data
-tracker
+tracker_data2
+mixed_data
+
+memo
