@@ -12,3 +12,9 @@ tracker_data2
 mixed_data
 
 memo
+
+# Ignore ROS2 colcon build files
+build
+install
+log
+src
