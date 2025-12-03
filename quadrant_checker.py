@@ -4,7 +4,7 @@ from ultralytics import YOLO
 DETECT_TARGET = [0, 1]
 
 def main():
-    model = YOLO('./mixed_results.pt') 
+    model = YOLO('/home/rokey/hj/Picker_project/webcam_final.pt') 
 
     cap = cv2.VideoCapture(2)
 

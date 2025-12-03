@@ -7,7 +7,7 @@ quadrant4: (-1.51404, -0.197009)
 queue_pos: (-3.50565, 2.13348)
 
 # picker_map.yaml 기준
-dock_pose:
+dock_pose: (-3.95146, 3.98198)
 quadrant1: (-5.69312, 5.59361)
 quadrant2: (-8.55142, 4.34779)
 quadrant3: (-7.87239, 1.90992)
