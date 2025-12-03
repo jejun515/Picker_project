@@ -47,7 +47,7 @@ class DepthToMap(Node):
         self.rgb_image = None
         self.yolo_running = False
 
-        # ▶ rqt용 이미지 QoS (RELIABLE)
+        # ▶ rqt용 이미지 QoS
         self.qos_image = QoSProfile(
             history=QoSHistoryPolicy.KEEP_LAST,
             depth=1,
@@ -120,7 +120,7 @@ class DepthToMap(Node):
             self.rgb_callback, self.qos_sensor
         )
 
-                # ▶ FPS 계산용 변수
+        # ▶ FPS 계산용 변수
         self.rgb_count = 0
         self.depth_count = 0
 
