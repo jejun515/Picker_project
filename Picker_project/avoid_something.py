@@ -3,11 +3,9 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from geometry_msgs.msg import Twist, PoseArray, PoseStamped
 from sensor_msgs.msg import LaserScan, Image
-from std_msgs.msg import Int32 
-# [NEW] 소리 관련 메시지 Import
+from std_msgs.msg import Int32, Bool 
 from irobot_create_msgs.msg import AudioNoteVector, AudioNote 
 from builtin_interfaces.msg import Duration 
-
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from turtlebot4_navigation.turtlebot4_navigator import TurtleBot4Directions, TurtleBot4Navigator
@@ -19,7 +17,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from ultralytics import YOLO
 
 # =========================================
-# 1. 안전 가드 + 통신 + 소리 모듈
+# 1. 안전 가드 + 통신(Phase + ROI) 모듈
 # =========================================
 class SafetyMonitor(Node):
     def __init__(self):
@@ -36,12 +34,23 @@ class SafetyMonitor(Node):
         self.img_sub = self.create_subscription(Image, f'{prefix}/oakd/rgb/preview/image_raw', self.img_callback, qos)
         self.order_sub = self.create_subscription(PoseArray, f'{prefix}/box_order_goals', self.order_callback, 10)
         
-        # 박스 개수 전송용 Publisher
         self.count_pub = self.create_publisher(Int32, '/camera/box_count', 10)
-        
-        # [NEW] 오디오 Publisher 추가 (Namespace 적용)
         self.audio_pub = self.create_publisher(AudioNoteVector, f'{prefix}/cmd_audio', 10)
+
+        # [통신 1] Phase 통신
+        self.phase_pub = self.create_publisher(Int32, f'{prefix}/current_phase', 10)
+        target_ns = '/robot3' if 'robot2' in ns else '/robot2'
+        self.other_robot_phase = 0 
+        self.phase_sub = self.create_subscription(Int32, f'{target_ns}/current_phase', self.phase_callback, 10)
         
+        # [통신 2] ROI 통신
+        self.roi_pub = self.create_publisher(Bool, '/ROI_robot_detected', 10)
+        self.roi_sub = self.create_subscription(Bool, '/ROI_robot_detected', self.roi_callback, 10)
+        
+        self.is_roi_occupied = False      
+        self.am_i_working = False         
+        self.last_roi_free_time = 0.0
+
         self.bridge = CvBridge()
         self.latest_cv_image = None
         
@@ -58,33 +67,45 @@ class SafetyMonitor(Node):
         self.phase2_active = False 
         self.obstacle_dir = 1.0
         self.is_sensor_active = False
-        
         self.received_poses = []
         self.has_new_order = False
 
-    # [NEW] 3초간 소리 내는 함수 추가
+    def phase_callback(self, msg):
+        self.other_robot_phase = msg.data
+
+    def roi_callback(self, msg):
+        if self.am_i_working: return 
+        if msg.data:
+            self.is_roi_occupied = True
+        else:
+            if self.is_roi_occupied:
+                self.last_roi_free_time = time.time()
+            self.is_roi_occupied = False
+
+    def publish_phase(self, phase_num: int):
+        msg = Int32()
+        msg.data = phase_num
+        self.phase_pub.publish(msg)
+
+    def set_roi_status(self, status: bool):
+        self.am_i_working = status
+        msg = Bool()
+        msg.data = status
+        self.roi_pub.publish(msg)
+        state_str = "작업 중(True)" if status else "작업 끝(False)"
+        print(f"📡 [ROI] 상태 변경 -> {state_str}", flush=True)
+
     def play_arrival_sound(self):
         print("🎵 [SOUND] 목적지 도착! 알림음 재생 (3초)", flush=True)
-        
-        # 0.3초 * 10회 = 3초 동안 반복
         for i in range(10):
             msg = AudioNoteVector()
-            
-            # 짝수번: 고음(880Hz), 홀수번: 저음(440Hz) -> 삐뽀삐뽀 효과
-            if i % 2 == 0:
-                freq = 880
-            else:
-                freq = 440
-                
-            # Note 생성 (0.3초 지속)
-            # Duration(sec=0, nanosec=300000000) -> 300,000,000ns = 0.3s
+            if i % 2 == 0: freq = 880
+            else: freq = 440
             note = AudioNote(frequency=freq, max_runtime=Duration(sec=0, nanosec=300000000))
-            
             msg.notes.append(note)
-            msg.append = False # 기존 소리 덮어쓰기
-            
+            msg.append = False
             self.audio_pub.publish(msg)
-            time.sleep(0.3) # 소리 재생 시간만큼 대기
+            time.sleep(0.3)
 
     def scan_callback(self, msg):
         self.is_sensor_active = True
@@ -94,35 +115,26 @@ class SafetyMonitor(Node):
 
         CENTER_RATIO = 0.25 
         center_idx = int(count * CENTER_RATIO)
-        
-        # [1] 멈춤 판단 (30도)
         stop_fov = 30 / 360
         stop_width = int(count * stop_fov / 2)
         s_start = max(0, center_idx - stop_width)
         s_end = min(count, center_idx + stop_width)
-        
         stop_ranges = ranges[s_start : s_end]
         valid_stop = [r for r in stop_ranges if 0.18 < r < 1.0]
         min_dist = min(valid_stop) if valid_stop else 10.0
-
         self.current_dist = min_dist
         self.is_danger = (min_dist < self.emergency_dist)
 
-        # [2] 회피 방향 (100도)
         steer_fov = 100 / 360
         steer_width = int(count * steer_fov / 2)
         w_start = max(0, center_idx - steer_width)
         w_end = min(count, center_idx + steer_width)
-        
         wide_ranges = ranges[w_start : w_end]
         mid = len(wide_ranges) // 2
-        
         valid_l = [r for r in wide_ranges[:mid] if r > 0.18]
         valid_r = [r for r in wide_ranges[mid:] if r > 0.18]
-        
         l_avg = sum(valid_l) / len(valid_l) if valid_l else 0.0
         r_avg = sum(valid_r) / len(valid_r) if valid_r else 0.0
-        
         if l_avg > r_avg: self.obstacle_dir = 1.0 
         else: self.obstacle_dir = -1.0
 
@@ -151,15 +163,13 @@ class SafetyMonitor(Node):
         if self.model is None or self.latest_cv_image is None: return -1
         print("📸 YOLO 분석 중...", flush=True)
         results = self.model(self.latest_cv_image, verbose=False)[0]
-        count = len(results.boxes)
-        return count
+        return len(results.boxes)
 
 # =========================================
 # 2. 메인 실행 로직
 # =========================================
 def main():
     rclpy.init()
-    
     safety_node = SafetyMonitor()
     navigator = TurtleBot4Navigator()
 
@@ -168,66 +178,26 @@ def main():
     spin_thread = threading.Thread(target=executor.spin, daemon=True)
     spin_thread.start()
     
-    # -------------------------------------------------------------
     # [1] 주문 대기
-    # -------------------------------------------------------------
+    safety_node.publish_phase(0)
     print("\n🌐 [대기 중] '/box_order_goals' 토픽을 기다리는 중...", flush=True)
     while not safety_node.has_new_order:
+        safety_node.publish_phase(0)
         time.sleep(1.0)     
     
-    # -------------------------------------------------------------
-    # [2] Undock -> Initial Pose 설정
-    # -------------------------------------------------------------
-    if navigator.getDockedStatus(): 
-        print("🔌 도킹 해제(Undock) 중...", flush=True)
-        navigator.undock()
-    
-    ns = safety_node.get_namespace()
-    print(f"📍 [위치 초기화] Undock 완료 위치를 기준으로 좌표를 설정합니다.", flush=True)
-    
-    initial_pose = PoseStamped()
-    initial_pose.header.frame_id = 'map'
-    initial_pose.header.stamp = navigator.get_clock().now().to_msg()
-    
-    dock_prep_x = 0.0
-    dock_prep_y = 0.0
-    
-    # [설정] Phase 4 도착 방향
-    phase4_direction = TurtleBot4Directions.NORTH 
-    
-    if 'robot3' in ns:
-        initial_pose.pose.position.x = 0.008313
-        initial_pose.pose.position.y = 0.75587
-        initial_pose.pose.position.z = 0.0
-        initial_pose.pose.orientation.z = -0.61263
-        initial_pose.pose.orientation.w = 0.7903667
-        
-        dock_prep_x = 0.1
-        dock_prep_y = 0.5
-        print("🤖 Robot 3 설정 적용됨.", flush=True)
-        
-    elif 'robot2' in ns:
-        initial_pose.pose.position.x = -0.46
-        initial_pose.pose.position.y = 0.754
-        initial_pose.pose.position.z = 0.0
-        initial_pose.pose.orientation.z = -0.61263
-        initial_pose.pose.orientation.w = 0.7903667
-
-        dock_prep_x = -0.5
-        dock_prep_y = 0.5
-        print("🤖 Robot 2 설정 적용됨.", flush=True)
-    else:
-        initial_pose.pose.orientation.w = 1.0
-        print("⚠️ Unknown Robot Namespace. 기본값 사용.")
-
-    navigator.setInitialPose(initial_pose)
+    if not navigator.getDockedStatus(): navigator.dock()
+    # initial_pose = navigator.getPoseStamped([0.0, 0.0], TurtleBot4Directions.NORTH)
+    # navigator.setInitialPose(initial_pose)
     navigator.waitUntilNav2Active()
+    navigator.undock()
     
     print("⏳ 센서 확인 중...", flush=True)
     while not safety_node.is_sensor_active: time.sleep(0.1)
     print("✅ 센서 연결됨.", flush=True)
 
-    # 미션 목표 설정
+    # -------------------------------------------------------------
+    # 목표 설정
+    # -------------------------------------------------------------
     box_pose_raw = safety_node.received_poses[0]
     room_pose_raw = safety_node.received_poses[1]
     
@@ -236,6 +206,22 @@ def main():
     target_room_x = room_pose_raw.position.x
     target_room_y = room_pose_raw.position.y
     
+    # Phase 5 복귀 좌표 및 도착 방향
+    ns = safety_node.get_namespace()
+    dock_prep_x = 0.0
+    dock_prep_y = 0.0
+
+    if 'robot3' in ns:
+        dock_prep_x = 0.1
+        dock_prep_y = 0.5
+        print("🤖 Robot 3 설정 적용.", flush=True)
+    elif 'robot2' in ns:
+        dock_prep_x = -0.4
+        dock_prep_y = 0.5
+        print("🤖 Robot 2 설정 적용.", flush=True)
+    else:
+        print("⚠️ Unknown Robot Namespace. 기본값 사용.")
+
     print(f"🚀 미션 시작! 1차목표: ({target_box_x}, {target_box_y})", flush=True)
 
     prefix = "" if ns == "/" else ns
@@ -258,7 +244,6 @@ def main():
         
         navigator.goToPose(target_pose)
         
-        print("⏳ Nav2 상태 초기화 대기 (1.5초)...", flush=True)
         time.sleep(1.5) 
         
         print("⏳ 경로 계산 중...", flush=True)
@@ -314,21 +299,59 @@ def main():
         limit = arrival_radius + 0.05 if strict_mode else arrival_radius + 0.3
         return "SUCCESS" if last_known_dist < limit else "FAIL"
 
-    def nudge_robot(distance_m, speed_mps=0.05):
+    def nudge_robot(distance_m, speed_mps=0.05, safety_limit=None):
         action = "전진" if distance_m > 0 else "후진"
         print(f"📏 [마무리] {abs(distance_m)}m {action}...", flush=True)
         duration = abs(distance_m) / speed_mps
         twist = Twist(); twist.linear.x = speed_mps if distance_m > 0 else -speed_mps
         start_time = time.time()
         while (time.time() - start_time) < duration:
+            if distance_m > 0 and safety_limit is not None:
+                if safety_node.current_dist < safety_limit:
+                    print(f"🛑 [STOP] 장애물 근접! ({safety_node.current_dist:.2f}m)", flush=True)
+                    break
             safety_node.cmd_vel_pub.publish(twist); time.sleep(0.1)
         safety_node.cmd_vel_pub.publish(Twist())
 
     # =========================================================
+    # [NEW] 스마트 교통 정리 (Phase + ROI 체크 + 10초 대기)
+    # =========================================================
+    def check_and_wait_if_busy():
+        if 'robot2' in ns:
+            other_phase = safety_node.other_robot_phase
+            is_roi = safety_node.is_roi_occupied
+            
+            # (Phase가 1,2,3) OR (ROI가 True)이면 위험!
+            if (other_phase in [1, 2, 3]) or is_roi:
+                print(f"\n⚠️ [TRAFFIC] 작업 중 감지! (Phase: {other_phase}, ROI: {is_roi})", flush=True)
+                print("🛑 [WAIT] 대기 장소로 이동합니다.", flush=True)
+                
+                hold_pose = navigator.getPoseStamped([-0.55, -3.2], TurtleBot4Directions.EAST)
+                drive_smart(hold_pose, arrival_radius=0.2, strict_mode=False)
+                
+                print("⏳ 안전거리 확보를 위해 10초간 대기...", flush=True)
+                time.sleep(10.0)
+                
+                print("👀 [CHECK] 진입 조건 확인 중...", flush=True)
+                while True:
+                    curr_phase = safety_node.other_robot_phase
+                    curr_roi = safety_node.is_roi_occupied
+                    
+                    if (curr_phase == 0 or curr_phase >= 4) and (not curr_roi):
+                        print(f"\n✅ [GO] 진입 허가! (Phase: {curr_phase}, ROI: False)", flush=True)
+                        break
+                    
+                    print(f"⏳ 대기 중... (Phase: {curr_phase}, ROI: {curr_roi})", end='\r', flush=True)
+                    time.sleep(1.0)
+
+    # =========================================================
     # Phase 1: 1차 진입
     # =========================================================
+    check_and_wait_if_busy()
+
+    safety_node.publish_phase(1)
     safety_node.emergency_dist = 0.50 
-    goal_1 = navigator.getPoseStamped([1.8, -4.0], TurtleBot4Directions.EAST)
+    goal_1 = navigator.getPoseStamped([1.9, -4.0], TurtleBot4Directions.NORTH)
     set_nav2_params(0.31, 0.5, 3.14)
     
     while True:
@@ -340,22 +363,30 @@ def main():
     # =========================================================
     # Phase 2: 박스 위치
     # =========================================================
-    print("📉 [접근] 안전거리 15cm로 축소.", flush=True)
+    check_and_wait_if_busy()
+
+    safety_node.publish_phase(2)
+    print("\n📉 [접근] 안전거리 15cm로 축소.", flush=True)
     safety_node.emergency_dist = 0.15 
     
-    goal_2 = navigator.getPoseStamped([target_box_x, target_box_y], TurtleBot4Directions.EAST)
+    goal_2 = navigator.getPoseStamped([target_box_x, target_box_y], TurtleBot4Directions.NORTH)
     set_nav2_params(0.1, 0.05, 0.1)
     
     while True:
         status = drive_smart(goal_2, arrival_radius=0.05, strict_mode=True)
         if status == "SUCCESS": 
             print("🎉 박스 앞 도착!", flush=True)
-            nudge_robot(0.15) 
+            nudge_robot(0.15, safety_limit=0.40) 
             break
         elif status == "RETRY": continue
         else: print("❌ 도착 실패.", flush=True); rclpy.shutdown(); return
 
-    # Phase 3: YOLO
+    # =========================================================
+    # Phase 3: YOLO (ROI 점유)
+    # =========================================================
+    safety_node.publish_phase(3)
+    safety_node.set_roi_status(True) # Bool True 발행
+    
     print("\n=== [Phase 3] 물체 감지 시작 ===", flush=True)
     time.sleep(2.0)
     box_count = safety_node.detect_and_count()
@@ -365,35 +396,30 @@ def main():
     nudge_robot(-0.25)
     print("📈 [복구] 안전거리 0.5m로 복구.", flush=True)
     safety_node.emergency_dist = 0.50
+    
+    safety_node.set_roi_status(False) # Bool False 발행
 
     # =========================================================
     # Phase 4: 도착지로 이동
     # =========================================================
+    safety_node.publish_phase(4) # Phase 4 알림 (뒷 로봇 진입 허용)
     print("\n=== [Phase 4] 도착지로 이동 ===", flush=True)
-    goal_3 = navigator.getPoseStamped([target_room_x, target_room_y], phase4_direction)
-    set_nav2_params(0.31, 0.5, 0.5) 
+    goal_3 = navigator.getPoseStamped([target_room_x, target_room_y], TurtleBot4Directions.WEST)
+    set_nav2_params(0.31, 0.2, 0.5) 
 
     while True:
         status = drive_smart(goal_3, arrival_radius=0.2, strict_mode=False)
         if status == "SUCCESS": 
             print("✅ 2차 지점 도착 완료!", flush=True)
-            
-            # --------------------------------------------------------
-            # [NEW] Phase 4 도착 직후 소리 재생 + DB 전송
-            # --------------------------------------------------------
-            # 1. 삐뽀삐뽀 소리 재생 (3초)
             safety_node.play_arrival_sound()
             
-            # 2. 박스 개수 전송 (-1 차감)
             print("\n📡 [DATA] DB 업데이트를 위해 박스 개수 전송 중...", flush=True)
-            final_count = max(0, box_count - 1)
+            final_count = max(0, box_count)
             msg = Int32()
             msg.data = final_count
             safety_node.count_pub.publish(msg)
             
-            print(f"   -> 원본 개수: {box_count}개")
-            print(f"   -> 전송 개수(차감): {final_count}개")
-            print(f"   -> 토픽: /camera/box_count\n", flush=True)
+            print(f"   -> 전송 개수: {final_count}개 (/camera/box_count)\n", flush=True)
             break
             
         elif status == "RETRY": continue
@@ -404,10 +430,11 @@ def main():
     # =========================================================
     # Phase 5: 도킹 복귀
     # =========================================================
+    safety_node.publish_phase(5)
     print("\n=== [Phase 5] 도킹 스테이션 복귀 ===", flush=True)
     print(f"📍 도킹 준비 위치: ({dock_prep_x}, {dock_prep_y})")
     
-    dock_pose = navigator.getPoseStamped([dock_prep_x, dock_prep_y], TurtleBot4Directions.EAST)
+    dock_pose = navigator.getPoseStamped([dock_prep_x, dock_prep_y], TurtleBot4Directions.SOUTH)
     set_nav2_params(0.31, 0.1, 0.1)
 
     while True:
