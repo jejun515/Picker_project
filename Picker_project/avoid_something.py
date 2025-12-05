@@ -115,7 +115,7 @@ class SafetyMonitor(Node):
 
         CENTER_RATIO = 0.25 
         center_idx = int(count * CENTER_RATIO)
-        stop_fov = 30 / 360
+        stop_fov = 50 / 360
         stop_width = int(count * stop_fov / 2)
         s_start = max(0, center_idx - stop_width)
         s_end = min(count, center_idx + stop_width)
@@ -212,8 +212,8 @@ def main():
     dock_prep_y = 0.0
 
     if 'robot3' in ns:
-        dock_prep_x = 0.1
-        dock_prep_y = 0.5
+        dock_prep_x = 0.12
+        dock_prep_y = 0.65
         print("🤖 Robot 3 설정 적용.", flush=True)
     elif 'robot2' in ns:
         dock_prep_x = -0.4
@@ -271,7 +271,7 @@ def main():
                 print("🔄 회피 중...", flush=True)
                 while safety_node.is_danger:
                     twist = Twist(); twist.linear.x = 0.0
-                    twist.angular.z = 2.0 * safety_node.obstacle_dir 
+                    twist.angular.z = 2.5 * safety_node.obstacle_dir 
                     safety_node.cmd_vel_pub.publish(twist)
                     time.sleep(0.1)
                 
@@ -326,11 +326,11 @@ def main():
                 print(f"\n⚠️ [TRAFFIC] 작업 중 감지! (Phase: {other_phase}, ROI: {is_roi})", flush=True)
                 print("🛑 [WAIT] 대기 장소로 이동합니다.", flush=True)
                 
-                hold_pose = navigator.getPoseStamped([-0.55, -3.2], TurtleBot4Directions.EAST)
+                hold_pose = navigator.getPoseStamped([-0.4, -3.35], TurtleBot4Directions.EAST)
                 drive_smart(hold_pose, arrival_radius=0.2, strict_mode=False)
                 
-                print("⏳ 안전거리 확보를 위해 10초간 대기...", flush=True)
-                time.sleep(10.0)
+                print("⏳ 안전거리 확보를 위해 수초간 대기...", flush=True)
+                time.sleep(25.0)
                 
                 print("👀 [CHECK] 진입 조건 확인 중...", flush=True)
                 while True:
@@ -351,7 +351,7 @@ def main():
 
     safety_node.publish_phase(1)
     safety_node.emergency_dist = 0.50 
-    goal_1 = navigator.getPoseStamped([1.9, -4.0], TurtleBot4Directions.NORTH)
+    goal_1 = navigator.getPoseStamped([2.0, -4.0], TurtleBot4Directions.NORTH)
     set_nav2_params(0.31, 0.5, 3.14)
     
     while True:
@@ -369,7 +369,7 @@ def main():
     print("\n📉 [접근] 안전거리 15cm로 축소.", flush=True)
     safety_node.emergency_dist = 0.15 
     
-    goal_2 = navigator.getPoseStamped([target_box_x, target_box_y], TurtleBot4Directions.NORTH)
+    goal_2 = navigator.getPoseStamped([target_box_x, target_box_y], TurtleBot4Directions.NORTH_EAST)
     set_nav2_params(0.1, 0.05, 0.1)
     
     while True:
@@ -404,7 +404,7 @@ def main():
     # =========================================================
     safety_node.publish_phase(4) # Phase 4 알림 (뒷 로봇 진입 허용)
     print("\n=== [Phase 4] 도착지로 이동 ===", flush=True)
-    goal_3 = navigator.getPoseStamped([target_room_x, target_room_y], TurtleBot4Directions.WEST)
+    goal_3 = navigator.getPoseStamped([target_room_x, target_room_y], TurtleBot4Directions.NORTH)
     set_nav2_params(0.31, 0.2, 0.5) 
 
     while True:
