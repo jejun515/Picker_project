@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'avoid_something = final_project.avoid_something:main'
+            'picker_main = final_project.picker_turtlebot:main'
         ],
     },
 )
