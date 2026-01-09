@@ -1,35 +1,45 @@
-# 🐢 Turtlebot4 Multi-Robot Autonomous Logistics & Control System
-
-> **"웹에서 클릭 한 번으로, 다중 로봇이 스스로 협업하여 물류를 처리합니다."**
-> 
-> 본 프로젝트는 **2대의 Turtlebot4 로봇**이 협업하여 창고 내 재고를 파악하고 이송하는 **자율주행 시스템**과, 이를 실시간으로 제어하고 모니터링하는 **O2O 통합 관제 웹 플랫폼**을 결합한 솔루션입니다.
+# 👔 Smart Clothing Store Autonomous Serving System
 
 ![ROS2](https://img.shields.io/badge/ROS2-Humble-blue?style=for-the-badge&logo=ros&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.10-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Turtlebot4](https://img.shields.io/badge/Platform-Turtlebot4-green?style=for-the-badge)
 ![YOLO](https://img.shields.io/badge/AI-YOLOv8-FF0000?style=for-the-badge)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Nav2](https://img.shields.io/badge/Navigation-Nav2-orange?style=for-the-badge)
+
+> **"직원 대신 로봇이 옷을 찾아드립니다."**
+> 
+> 의류 매장을 방문한 손님이 웹으로 옷을 주문하면, **2대의 Turtlebot4 로봇**이 스스로 창고로 이동하여 재고를 파악하고 손님에게 직접 배달하는 **O2O(Online to Offline) 매장 자동화 시스템**입니다.
+
+<br>
+
+## 🏪 프로젝트 시나리오 (Service Scenario)
+
+이 시스템은 복잡한 의류 매장 환경에서 직원의 반복적인 물류 업무를 자동화하기 위해 설계되었습니다.
+
+1.  **Order (주문):** 손님이 매장 내 키오스크/모바일 웹에서 원하는 의류를 주문합니다.
+2.  **Dispatch (배차):** 대기 중인 로봇이 주문 정보를 수신하고, 매장 지도를 기반으로(SLAM) 창고로 이동합니다.
+3.  **Inventory Check (재고 파악):** 로봇이 지정된 선반 앞에서 **YOLOv8** 비전 시스템을 이용해 해당 의류(Box)의 재고 유무를 확인합니다.
+4.  **Delivery (배송):** 물품을 싣고 매장 내 진열대와 사람을 피해 손님 위치로 정확하게 배달합니다.
+5.  **Return (복귀):** 임무를 마친 로봇은 자동으로 도킹 스테이션으로 복귀하여 충전합니다.
 
 <br>
 
 ## 🏛️ 시스템 아키텍처 (System Architecture)
 
-사용자의 웹 주문이 실제 로봇의 자율주행 미션으로 이어지는 전체 흐름도입니다.
-
 ```mermaid
 graph LR
-    A["🧑‍💻 사용자"] -->|주문 클릭| B("⚛️ React 웹")
-    B -->|"REST API"| C{"⚡ FastAPI 서버"}
-    C -->|"데이터 저장"| D[("🐬 DB (MySQL)")]
-    C <-->|"Topic/Action"| E["🐢 ROS2 Mission Master"]
-    E -->|"Nav2 / Traffic Control"| F["🤖 Turtlebot4 (Robot 2, 3)"]
-    F -->|"YOLO Detect"| G["📦 박스 재고 파악"]
+    A["👤 손님 (Web Client)"] -->|의류 주문| B("☁️ 통합 관제 서버 (FastAPI)")
+    B -->|"재고 확인 요청"| C["🐢 Mission Master Node"]
     
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#61DAFB,stroke:#333,stroke-width:2px
-    style C fill:#009688,stroke:#333,stroke-width:2px
-    style E fill:#22314E,stroke:#fff,stroke-width:2px,color:#fff
+    subgraph Robot System [Turtlebot4 Swarm]
+        C -->|"Nav2 Action"| D["🤖 Robot 2 (Leader)"]
+        C -->|"Nav2 Action"| E["🤖 Robot 3 (Follower)"]
+        D & E -->|"Traffic Control"| F{"🚦 충돌 방지 로직"}
+        D & E -->|"Object Detection"| G["📷 OAK-D Lite (YOLO)"]
+    end
+
+    G -->|"재고 데이터 전송"| B
+    F -->|"안전 주행"| H["🏁 고객 위치 도착"]
 ```
 ---
 
